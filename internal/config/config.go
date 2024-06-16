@@ -37,7 +37,8 @@ type RunImage struct {
 }
 
 type TrustedBuilder struct {
-	Name string `toml:"name"`
+	Name      string     `toml:"name"`
+	RunImages []RunImage `toml:"runImages",omitempty`
 }
 
 const OfficialRegistryName = "official"

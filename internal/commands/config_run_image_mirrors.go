@@ -33,7 +33,7 @@ func ConfigRunImagesMirrors(logger logging.Logger, cfg config.Config, cfgPath st
 	listCmd.Example = "pack config run-image-mirrors list"
 	cmd.AddCommand(listCmd)
 
-	addCmd := generateAdd("mirror for a run image", logger, cfg, cfgPath, addRunImageMirror)
+	addCmd := generateAdd("mirror for a run image", logger, cfg, cfgPath, nil, addRunImageMirror)
 	addCmd.Use = "add <image> [-m <mirror...]"
 	addCmd.Long = "Set mirrors to other repositories for a given run image"
 	addCmd.Example = "pack config run-image-mirrors add cnbs/sample-stack-run:bionic --mirror index.docker.io/cnbs/sample-stack-run:bionic --mirror gcr.io/cnbs/sample-stack-run:bionic"
@@ -52,7 +52,7 @@ func ConfigRunImagesMirrors(logger logging.Logger, cfg config.Config, cfgPath st
 	return cmd
 }
 
-func addRunImageMirror(args []string, logger logging.Logger, cfg config.Config, cfgPath string) error {
+func addRunImageMirror(args []string, logger logging.Logger, cfg config.Config, cfgPath string, _ BuilderInspector) error {
 	runImage := args[0]
 	if len(mirrors) == 0 {
 		logger.Infof("No run image mirrors were provided.")

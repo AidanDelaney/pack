@@ -8,7 +8,7 @@ import (
 )
 
 // Deprecated: Use `config trusted-builders add` instead
-func TrustBuilder(logger logging.Logger, cfg config.Config, cfgPath string) *cobra.Command {
+func TrustBuilder(logger logging.Logger, cfg config.Config, cfgPath string, client PackClient) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "trust-builder <builder-name>",
 		Args:    cobra.ExactArgs(1),
@@ -18,7 +18,7 @@ func TrustBuilder(logger logging.Logger, cfg config.Config, cfgPath string) *cob
 		Hidden:  true,
 		RunE: logError(logger, func(cmd *cobra.Command, args []string) error {
 			deprecationWarning(logger, "trust-builder", "config trusted-builders add")
-			return addTrustedBuilder(args, logger, cfg, cfgPath)
+			return addTrustedBuilder(args, logger, cfg, cfgPath, client)
 		}),
 	}
 

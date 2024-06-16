@@ -27,7 +27,7 @@ var (
 func ConfigRegistries(logger logging.Logger, cfg config.Config, cfgPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "registries",
-		Aliases: []string{"registry", "registreis"},
+		Aliases: []string{"registry", "registries"},
 		Short:   "List, add and remove registries",
 		Long:    bpRegistryExplanation + "\nYou can use the attached commands to list, add, and remove registries from your config",
 		RunE: logError(logger, func(cmd *cobra.Command, args []string) error {
@@ -41,7 +41,7 @@ func ConfigRegistries(logger logging.Logger, cfg config.Config, cfgPath string) 
 	listCmd.Long = bpRegistryExplanation + "List Registries saved in the pack config.\n\nShow the registries that are either added by default or have been explicitly added by using `pack config registries add`"
 	cmd.AddCommand(listCmd)
 
-	addCmd := generateAdd("registries", logger, cfg, cfgPath, addRegistry)
+	addCmd := generateAdd("registries", logger, cfg, cfgPath, nil, addRegistry)
 	addCmd.Args = cobra.ExactArgs(2)
 	addCmd.Example = "pack config registries add my-registry https://github.com/buildpacks/my-registry"
 	addCmd.Long = bpRegistryExplanation + "Users can add registries from the config by using registries remove, and publish/yank buildpacks from it, as well as use those buildpacks when building applications."
@@ -60,17 +60,17 @@ func ConfigRegistries(logger logging.Logger, cfg config.Config, cfgPath string) 
 	return cmd
 }
 
-func addRegistry(args []string, logger logging.Logger, cfg config.Config, cfgPath string) error {
+func addRegistry(args []string, logger logging.Logger, cfg config.Config, cfgPath string, _ BuilderInspector) error {
 	newRegistry := config.Registry{
 		Name: args[0],
 		URL:  args[1],
 		Type: registryType,
 	}
 
-	return addRegistryToConfig(logger, newRegistry, setDefault, cfg, cfgPath)
+	return addRegistryToConfig(logger, newRegistry, setDefault, cfg, cfgPath, nil)
 }
 
-func addRegistryToConfig(logger logging.Logger, newRegistry config.Registry, setDefault bool, cfg config.Config, cfgPath string) error {
+func addRegistryToConfig(logger logging.Logger, newRegistry config.Registry, setDefault bool, cfg config.Config, cfgPath string, _ BuilderInspector) error {
 	if newRegistry.Name == config.OfficialRegistryName {
 		return errors.Errorf("%s is a reserved registry, please provide a different name",
 			style.Symbol(config.OfficialRegistryName))

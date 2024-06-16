@@ -30,7 +30,7 @@ func AddBuildpackRegistry(logger logging.Logger, cfg config.Config, cfgPath stri
 				Type: registryType,
 			}
 
-			return addRegistryToConfig(logger, newRegistry, setDefault, cfg, cfgPath)
+			return addRegistryToConfig(logger, newRegistry, setDefault, cfg, cfgPath, nil)
 		}),
 	}
 	cmd.Flags().BoolVar(&setDefault, "default", false, "Set this buildpack registry as the default")

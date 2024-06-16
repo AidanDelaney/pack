@@ -39,7 +39,7 @@ func testTrustBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		tempPackHome, err = os.MkdirTemp("", "pack-home")
 		h.AssertNil(t, err)
 		configPath = filepath.Join(tempPackHome, "config.toml")
-		command = commands.TrustBuilder(logger, config.Config{}, configPath)
+		command = commands.TrustBuilder(logger, config.Config{}, configPath, )
 	})
 
 	it.After(func() {

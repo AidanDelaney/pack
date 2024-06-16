@@ -32,7 +32,7 @@ func ConfigRegistryMirrors(logger logging.Logger, cfg config.Config, cfgPath str
 	listCmd.Example = "pack config registry-mirrors list"
 	cmd.AddCommand(listCmd)
 
-	addCmd := generateAdd("mirror for a registry", logger, cfg, cfgPath, addRegistryMirror)
+	addCmd := generateAdd("mirror for a registry", logger, cfg, cfgPath, nil, addRegistryMirror)
 	addCmd.Use = "add <registry> [-m <mirror...]"
 	addCmd.Long = "Set mirror for a given registry."
 	addCmd.Example = "pack config registry-mirrors add index.docker.io --mirror 10.0.0.1\npack config registry-mirrors add '*' --mirror 10.0.0.1"
@@ -49,7 +49,7 @@ func ConfigRegistryMirrors(logger logging.Logger, cfg config.Config, cfgPath str
 	return cmd
 }
 
-func addRegistryMirror(args []string, logger logging.Logger, cfg config.Config, cfgPath string) error {
+func addRegistryMirror(args []string, logger logging.Logger, cfg config.Config, cfgPath string, _ BuilderInspector) error {
 	registry := args[0]
 	if registryMirror == "" {
 		logger.Infof("A registry mirror was not provided.")

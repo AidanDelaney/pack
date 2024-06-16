@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/heroku/color"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 	"github.com/spf13/cobra"
 
 	"github.com/buildpacks/pack/internal/commands"
+	"github.com/buildpacks/pack/internal/commands/testmocks"
 	"github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/pkg/logging"
@@ -27,11 +29,13 @@ func TestTrustedBuilderCommand(t *testing.T) {
 
 func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 	var (
-		command      *cobra.Command
-		logger       logging.Logger
-		outBuf       bytes.Buffer
-		tempPackHome string
-		configPath   string
+		command        *cobra.Command
+		logger         logging.Logger
+		outBuf         bytes.Buffer
+		mockController *gomock.Controller
+		mockInspector  commands.BuilderInspector
+		tempPackHome   string
+		configPath     string
 	)
 
 	it.Before(func() {
@@ -42,7 +46,10 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		h.AssertNil(t, err)
 		configPath = filepath.Join(tempPackHome, "config.toml")
 
-		command = commands.ConfigTrustedBuilder(logger, config.Config{}, configPath)
+		mockController = gomock.NewController(t)
+		mockInspector = testmocks.NewMockBuilderInspector(mockController)
+
+		command = commands.ConfigTrustedBuilder(logger, config.Config{}, configPath, mockInspector)
 		command.SetOut(logging.GetWriterForLevel(logger, logging.InfoLevel))
 	})
 
@@ -104,7 +111,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 			outBuf.Reset()
 
 			configManager := newConfigManager(t, configPath)
-			command = commands.ConfigTrustedBuilder(logger, configManager.configWithTrustedBuilders(builderName), configPath)
+			command = commands.ConfigTrustedBuilder(logger, configManager.configWithTrustedBuilders(builderName), configPath, mockInspector)
 			command.SetArgs(args)
 			h.AssertNil(t, command.Execute())
 
@@ -135,7 +142,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 			it("fails", func() {
 				tempPath := filepath.Join(tempPackHome, "non-existent-file.toml")
 				h.AssertNil(t, os.WriteFile(tempPath, []byte("something"), 0111))
-				command = commands.ConfigTrustedBuilder(logger, config.Config{}, tempPath)
+				command = commands.ConfigTrustedBuilder(logger, config.Config{}, tempPath, mockInspector)
 				command.SetOut(logging.GetWriterForLevel(logger, logging.InfoLevel))
 				command.SetArgs(append(args, "some-builder"))
 				h.AssertError(t, command.Execute(), "writing config")
@@ -198,7 +205,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		when("no builder is provided", func() {
 			it("prints usage", func() {
 				cfg := configManager.configWithTrustedBuilders()
-				command := commands.ConfigTrustedBuilder(logger, cfg, configPath)
+				command := commands.ConfigTrustedBuilder(logger, cfg, configPath, mockInspector)
 				command.SetArgs(args)
 				command.SetOut(&outBuf)
 
@@ -213,7 +220,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 				builderName := "some-builder"
 
 				cfg := configManager.configWithTrustedBuilders(builderName)
-				command := commands.ConfigTrustedBuilder(logger, cfg, configPath)
+				command := commands.ConfigTrustedBuilder(logger, cfg, configPath, mockInspector)
 				command.SetArgs(append(args, builderName))
 
 				h.AssertNil(t, command.Execute())
@@ -233,7 +240,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 				stillTrustedBuilder := "very/safe/builder"
 
 				cfg := configManager.configWithTrustedBuilders(untrustBuilder, stillTrustedBuilder)
-				command := commands.ConfigTrustedBuilder(logger, cfg, configPath)
+				command := commands.ConfigTrustedBuilder(logger, cfg, configPath, mockInspector)
 				command.SetArgs(append(args, untrustBuilder))
 
 				h.AssertNil(t, command.Execute())
@@ -251,7 +258,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 				stillTrustedBuilder := "very/safe/builder"
 
 				cfg := configManager.configWithTrustedBuilders(stillTrustedBuilder)
-				command := commands.ConfigTrustedBuilder(logger, cfg, configPath)
+				command := commands.ConfigTrustedBuilder(logger, cfg, configPath, mockInspector)
 				command.SetArgs(append(args, neverTrustedBuilder))
 
 				h.AssertNil(t, command.Execute())
@@ -271,7 +278,7 @@ func testTrustedBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		when("builder is a suggested builder", func() {
 			it("does nothing and reports that ", func() {
 				builder := "paketobuildpacks/builder-jammy-base"
-				command := commands.ConfigTrustedBuilder(logger, config.Config{}, configPath)
+				command := commands.ConfigTrustedBuilder(logger, config.Config{}, configPath, mockInspector)
 				command.SetArgs(append(args, builder))
 
 				err := command.Execute()

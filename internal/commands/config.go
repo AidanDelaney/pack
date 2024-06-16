@@ -21,7 +21,7 @@ func NewConfigCommand(logger logging.Logger, cfg config.Config, cfgPath string, 
 	cmd.AddCommand(ConfigPullPolicy(logger, cfg, cfgPath))
 	cmd.AddCommand(ConfigRegistries(logger, cfg, cfgPath))
 	cmd.AddCommand(ConfigRunImagesMirrors(logger, cfg, cfgPath))
-	cmd.AddCommand(ConfigTrustedBuilder(logger, cfg, cfgPath))
+	cmd.AddCommand(ConfigTrustedBuilder(logger, cfg, cfgPath, client))
 	cmd.AddCommand(ConfigLifecycleImage(logger, cfg, cfgPath))
 	cmd.AddCommand(ConfigRegistryMirrors(logger, cfg, cfgPath))
 
@@ -29,15 +29,16 @@ func NewConfigCommand(logger logging.Logger, cfg config.Config, cfgPath string, 
 	return cmd
 }
 
+type addCfgFunc func(args []string, logger logging.Logger, cfg config.Config, cfgPath string, inspector BuilderInspector) error
 type editCfgFunc func(args []string, logger logging.Logger, cfg config.Config, cfgPath string) error
 
-func generateAdd(cmdName string, logger logging.Logger, cfg config.Config, cfgPath string, addFunc editCfgFunc) *cobra.Command {
+func generateAdd(cmdName string, logger logging.Logger, cfg config.Config, cfgPath string, inspector BuilderInspector, addFunc addCfgFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
 		Args:  cobra.ExactArgs(1),
 		Short: fmt.Sprintf("Add a %s", cmdName),
 		RunE: logError(logger, func(cmd *cobra.Command, args []string) error {
-			return addFunc(args, logger, cfg, cfgPath)
+			return addFunc(args, logger, cfg, cfgPath, inspector)
 		}),
 	}
 

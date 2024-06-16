@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -12,7 +13,7 @@ import (
 	"github.com/buildpacks/pack/pkg/logging"
 )
 
-func ConfigTrustedBuilder(logger logging.Logger, cfg config.Config, cfgPath string) *cobra.Command {
+func ConfigTrustedBuilder(logger logging.Logger, cfg config.Config, cfgPath string, inspector BuilderInspector) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "trusted-builders",
 		Short: "List, add and remove trusted builders",
@@ -33,7 +34,7 @@ func ConfigTrustedBuilder(logger logging.Logger, cfg config.Config, cfgPath stri
 	listCmd.Example = "pack config trusted-builders list"
 	cmd.AddCommand(listCmd)
 
-	addCmd := generateAdd("trusted-builders", logger, cfg, cfgPath, addTrustedBuilder)
+	addCmd := generateAdd("trusted-builders", logger, cfg, cfgPath, inspector, addTrustedBuilder)
 	addCmd.Long = "Trust builder.\n\nWhen building with this builder, all lifecycle phases will be run in a single container using the builder image."
 	addCmd.Example = "pack config trusted-builders add cnbs/sample-stack-run:bionic"
 	cmd.AddCommand(addCmd)
@@ -47,7 +48,7 @@ func ConfigTrustedBuilder(logger logging.Logger, cfg config.Config, cfgPath stri
 	return cmd
 }
 
-func addTrustedBuilder(args []string, logger logging.Logger, cfg config.Config, cfgPath string) error {
+func addTrustedBuilder(args []string, logger logging.Logger, cfg config.Config, cfgPath string, inspector BuilderInspector) error {
 	imageName := args[0]
 	builderToTrust := config.TrustedBuilder{Name: imageName}
 
@@ -55,6 +56,15 @@ func addTrustedBuilder(args []string, logger logging.Logger, cfg config.Config, 
 		logger.Infof("Builder %s is already trusted", style.Symbol(imageName))
 		return nil
 	}
+	runImages := []config.RunImage{}
+	remoteInfo, err := inspector.InspectBuilder(imageName, false)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve trusted builder metadata")
+	}
+	for _, runner := range remoteInfo.RunImages {
+		runImages = append(runImages, config.RunImage{Image: runner.Image, Mirrors: runner.Mirrors})
+	}
+	builderToTrust.RunImages = runImages
 
 	cfg.TrustedBuilders = append(cfg.TrustedBuilders, builderToTrust)
 	if err := config.Write(cfg, cfgPath); err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/buildpacks/pack/pkg/logging"
 )
 
+//go:generate mockgen -package testmocks -destination testmocks/mock_builder_inspector.go github.com/buildapcks/pack/internal/commands BuilderInspector
 type BuilderInspector interface {
 	InspectBuilder(name string, daemon bool, modifiers ...client.BuilderInspectionModifier) (*client.BuilderInfo, error)
 }
